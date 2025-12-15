@@ -30,11 +30,13 @@ git tag "v${VERSION}" && git push && git push --tags
 
 ## Individual Packages
 
+Each publish command automatically builds before publishing:
+
 ```bash
-pnpm publish:plugin
-pnpm publish:commit
-pnpm publish:approval
-pnpm publish:setup
+pnpm publish:plugin   # Builds then publishes plugin
+pnpm publish:commit   # Builds then publishes commit tool
+pnpm publish:approval # Builds then publishes wizard
+pnpm publish:setup    # Builds then publishes setup CLI
 ```
 
 ## Troubleshooting
