@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "publish:check": "pnpm --filter \"{packages/*}\" publish --dry-run",
-    "publish:all": "pnpm --filter \"{packages/*}\" publish --access public",
+    "publish": "pnpm publish:plugin && pnpm publish:commit && pnpm publish:approval",
     "publish:plugin": "pnpm --filter @vibelint/eslint-plugin-vibelint publish --access public",
     "publish:commit": "pnpm --filter @vibelint/vibelint-commit publish --access public",
     "publish:approval": "pnpm --filter @vibelint/vibelint-wizard publish --access public",

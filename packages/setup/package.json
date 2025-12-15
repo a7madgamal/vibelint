@@ -1,6 +1,6 @@
 {
   "name": "lintmyvibe",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Setup CLI for VibeLint packages",
   "type": "module",
   "main": "./dist/index.js",
