@@ -15,9 +15,9 @@
     "publish:commit": "pnpm --filter @vibelint/roastedCommit publish --access public",
     "publish:approval": "pnpm --filter @vibelint/eslint-warning-approval publish --access public",
     "publish:setup": "pnpm --filter lintmyvibe publish --access public",
-    "version:patch": "pnpm --filter \"{packages/*}\" version patch",
-    "version:minor": "pnpm --filter \"{packages/*}\" version minor",
-    "version:major": "pnpm --filter \"{packages/*}\" version major",
+    "version:patch": "pnpm -r --filter \"{packages/*}\" exec pnpm version patch",
+    "version:minor": "pnpm -r --filter \"{packages/*}\" exec pnpm version minor",
+    "version:major": "pnpm -r --filter \"{packages/*}\" exec pnpm version major",
     "prepublishOnly": "pnpm build"
   },
   "engines": {
