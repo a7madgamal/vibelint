@@ -128,7 +128,7 @@ const suppressApprovedPlugin: {
   configs?: Record<string, unknown[]>
 } = {
   meta: {
-    name: "@vibelint/eslint-plugin-suppress-approved",
+    name: "@vibelint/eslint-plugin-vibelint",
     version: "0.1.0"
   },
   processors: {

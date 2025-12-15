@@ -10,9 +10,9 @@ npx lintmyvibe
 
 This will guide you through an interactive setup process to:
 
-- Install `@vibelint/roasted-commit` for AI-powered commit message generation
-- Install `@vibelint/eslint-warning-approval` for managing ESLint warnings
-- Install `@vibelint/eslint-plugin-suppress-approved` ESLint plugin (optional)
+- Install `@vibelint/vibelint-commit` for AI-powered commit message generation
+- Install `@vibelint/vibelint-wizard` for managing ESLint warnings
+- Install `@vibelint/eslint-plugin-vibelint` ESLint plugin (optional)
 - Add convenient npm scripts to your `package.json`
 
 ## Features
@@ -27,14 +27,14 @@ This will guide you through an interactive setup process to:
 
 Depending on your selection:
 
-- **@vibelint/roasted-commit**: AI-powered commit message generation
-- **@vibelint/eslint-warning-approval**: Interactive wizard to manage ESLint warnings
-- **@vibelint/eslint-plugin-suppress-approved**: ESLint plugin to suppress approved warnings
+- **@vibelint/vibelint-commit**: AI-powered commit message generation
+- **@vibelint/vibelint-wizard**: Interactive wizard to manage ESLint warnings
+- **@vibelint/eslint-plugin-vibelint**: ESLint plugin to suppress approved warnings
 
 ## Scripts added to package.json
 
 - `commit`: Runs the commit message generator
-- `commit-lint`: Runs the ESLint warning approval wizard
+- `commit-wizard`: Runs the ESLint warning approval wizard
 
 ## Requirements
 

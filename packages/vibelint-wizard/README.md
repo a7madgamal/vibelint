@@ -1,11 +1,11 @@
-# @vibelint/eslint-warning-approval
+# @vibelint/vibelint-wizard
 
 Interactive ESLint warning approval tool.
 
 ## Install
 
 ```bash
-npm install -D @vibelint/eslint-warning-approval
+npm install -D @vibelint/vibelint-wizard
 ```
 
 ## Usage
@@ -13,13 +13,13 @@ npm install -D @vibelint/eslint-warning-approval
 ```json
 {
   "scripts": {
-    "commit-lint": "vibelint-eslint-warning-approval"
+    "commit-wizard": "vibelint-wizard"
   }
 }
 ```
 
 ```bash
-npm run commit-lint
+npm run commit-wizard
 ```
 
 ## Config
@@ -30,7 +30,7 @@ npm run commit-lint
 
 ```bash
 # .husky/pre-commit
-npm run commit-lint || exit 1
+npm run commit-wizard || exit 1
 ```
 
 **Note:** `.eslint-warnings-cache.json` must be committed to git.

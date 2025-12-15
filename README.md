@@ -4,9 +4,9 @@ Developer tools for code quality and commit workflows.
 
 ## Packages
 
-- `@vibelint/eslint-plugin-suppress-approved` - Suppress approved ESLint warnings
-- `@vibelint/roasted-commit` - AI commit messages via Ollama
-- `@vibelint/eslint-warning-approval` - Interactive warning approval
+- `@vibelint/eslint-plugin-vibelint` - Suppress approved ESLint warnings
+- `@vibelint/vibelint-commit` - AI commit messages via Ollama
+- `@vibelint/vibelint-wizard` - Interactive warning approval
 - `lintmyvibe` - Setup CLI
 
 ## Quick Start
@@ -18,7 +18,7 @@ npx lintmyvibe
 ## Installation
 
 ```bash
-npm install -D @vibelint/roasted-commit @vibelint/eslint-warning-approval @vibelint/eslint-plugin-suppress-approved
+npm install -D @vibelint/vibelint-commit @vibelint/vibelint-wizard @vibelint/eslint-plugin-vibelint
 ```
 
 Add to `package.json`:
@@ -26,8 +26,8 @@ Add to `package.json`:
 ```json
 {
   "scripts": {
-    "commit": "vibelint-roasted-commit",
-    "commit-lint": "vibelint-eslint-warning-approval"
+    "commit": "vibelint-commit",
+    "commit-wizard": "vibelint-wizard"
   }
 }
 ```
@@ -36,7 +36,7 @@ Add to `package.json`:
 
 ```bash
 npm run commit          # Generate commit message (requires Ollama)
-npm run commit-lint     # Approve/reject ESLint warnings
+npm run commit-wizard   # Approve/reject ESLint warnings
 ```
 
 **Env vars:**

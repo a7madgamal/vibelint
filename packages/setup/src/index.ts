@@ -121,12 +121,12 @@ function showESLintPluginInstructions(configFormat: ESLintConfigFormat): void {
     return
   }
 
-  console.log(kleur.dim("To use @vibelint/eslint-plugin-suppress-approved, add it to your ESLint configuration:\n"))
+  console.log(kleur.dim("To use @vibelint/eslint-plugin-vibelint, add it to your ESLint configuration:\n"))
 
   if (configFormat === "flat") {
     console.log(kleur.green("For ESLint flat config (eslint.config.mjs/js/ts):\n"))
     console.log(kleur.white("1. Import the plugin:"))
-    console.log(kleur.gray('   import suppressApprovedPlugin from "@vibelint/eslint-plugin-suppress-approved"\n'))
+    console.log(kleur.gray('   import suppressApprovedPlugin from "@vibelint/eslint-plugin-vibelint"\n'))
     console.log(kleur.white("2. Add to your config array:"))
     console.log(
       kleur.gray(`   export default [
@@ -137,29 +137,29 @@ function showESLintPluginInstructions(configFormat: ESLintConfigFormat): void {
   } else {
     console.log(kleur.green("For ESLint legacy config (.eslintrc.*):\n"))
     console.log(kleur.white("1. Install the plugin:"))
-    console.log(kleur.gray("   npm install -D @vibelint/eslint-plugin-suppress-approved\n"))
+    console.log(kleur.gray("   npm install -D @vibelint/eslint-plugin-vibelint\n"))
     console.log(kleur.white("2. Add to your .eslintrc.json:"))
     console.log(
       kleur.gray(`   {
-     "plugins": ["@vibelint/suppress-approved"],
-     "overrides": [
-       {
-         "files": ["*.js"],
-         "processor": "@vibelint/suppress-approved/js"
-       },
-       {
-         "files": ["*.ts"],
-         "processor": "@vibelint/suppress-approved/ts"
-       },
-       {
-         "files": ["*.jsx"],
-         "processor": "@vibelint/suppress-approved/jsx"
-       },
-       {
-         "files": ["*.tsx"],
-         "processor": "@vibelint/suppress-approved/tsx"
-       }
-     ]
+    "plugins": ["@vibelint/vibelint"],
+    "overrides": [
+      {
+        "files": ["*.js"],
+        "processor": "@vibelint/vibelint/js"
+      },
+      {
+        "files": ["*.ts"],
+        "processor": "@vibelint/vibelint/ts"
+      },
+      {
+        "files": ["*.jsx"],
+        "processor": "@vibelint/vibelint/jsx"
+      },
+      {
+        "files": ["*.tsx"],
+        "processor": "@vibelint/vibelint/tsx"
+      }
+    ]
    }`)
     )
   }
@@ -205,11 +205,11 @@ async function main() {
       message: "Which tools would you like to install?",
       choices: [
         {
-          title: "Only commit message generation (@vibelint/roasted-commit)",
+          title: "Only commit message generation (@vibelint/vibelint-commit)",
           value: "commit-only"
         },
         {
-          title: "Only lint wizard (@vibelint/eslint-warning-approval)",
+          title: "Only lint wizard (@vibelint/vibelint-wizard)",
           value: "lint-only"
         },
         { title: "Both", value: "both" }
@@ -246,7 +246,7 @@ async function main() {
       {
         type: "confirm",
         name: "pluginChoice",
-        message: "Install ESLint plugin (@vibelint/eslint-plugin-suppress-approved)?",
+        message: "Install ESLint plugin (@vibelint/eslint-plugin-vibelint)?",
         initial: true,
         stdin: process.stdin,
         stdout: process.stdout
@@ -269,13 +269,13 @@ async function main() {
 
   const packagesToInstall: string[] = []
   if (selection === "commit-only" || selection === "both") {
-    packagesToInstall.push("@vibelint/roasted-commit")
+    packagesToInstall.push("@vibelint/vibelint-commit")
   }
   if (selection === "lint-only" || selection === "both") {
-    packagesToInstall.push("@vibelint/eslint-warning-approval")
+    packagesToInstall.push("@vibelint/vibelint-wizard")
   }
   if (installPlugin) {
-    packagesToInstall.push("@vibelint/eslint-plugin-suppress-approved")
+    packagesToInstall.push("@vibelint/eslint-plugin-vibelint")
   }
 
   let allInstalled = true
@@ -301,14 +301,17 @@ async function main() {
     pkg.scripts = {}
   }
 
-  if (selection === "commit-only" || selection === "both") {
-    pkg.scripts.commit = "vibelint-roasted-commit"
+  if (selection === "commit-only") {
+    pkg.scripts.commit = "vibelint-commit"
     console.log(kleur.green("✓ Added script: commit"))
-  }
-
-  if (selection === "lint-only" || selection === "both") {
-    pkg.scripts["commit-lint"] = "vibelint-eslint-warning-approval"
-    console.log(kleur.green("✓ Added script: commit-lint"))
+  } else if (selection === "lint-only") {
+    pkg.scripts["commit-wizard"] = "vibelint-wizard"
+    console.log(kleur.green("✓ Added script: commit-wizard"))
+  } else if (selection === "both") {
+    pkg.scripts.commit = "vibelint-wizard && git add .eslint-warnings-cache.json && vibelint-commit"
+    pkg.scripts["commit-wizard"] = "vibelint-wizard"
+    console.log(kleur.green("✓ Added script: commit"))
+    console.log(kleur.green("✓ Added script: commit-wizard"))
   }
 
   writePackageJson(pkg)
@@ -333,8 +336,8 @@ async function main() {
   if (pkg.scripts?.commit) {
     console.log(kleur.dim(`  ${packageManager === "pnpm" ? "pnpm" : "npm"} run commit`))
   }
-  if (pkg.scripts?.["commit-lint"]) {
-    console.log(kleur.dim(`  ${packageManager === "pnpm" ? "pnpm" : "npm"} run commit-lint`))
+  if (pkg.scripts?.["commit-wizard"]) {
+    console.log(kleur.dim(`  ${packageManager === "pnpm" ? "pnpm" : "npm"} run commit-wizard`))
   }
 
   if (installPlugin && eslintConfigFormat !== "none") {

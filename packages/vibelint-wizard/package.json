@@ -1,12 +1,12 @@
 {
-  "name": "@vibelint/roasted-commit",
-  "version": "0.1.6",
-  "description": "AI-powered commit message generator using Ollama",
+  "name": "@vibelint/vibelint-wizard",
+  "version": "0.1.7",
+  "description": "Interactive ESLint warning approval tool",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "vibelint-roasted-commit": "./dist/index.js"
+    "vibelint-wizard": "./dist/index.js"
   },
   "files": [
     "dist"
@@ -16,17 +16,17 @@
     "clean": "rm -rf dist"
   },
   "keywords": [
-    "git",
-    "commit",
-    "ai",
-    "ollama",
-    "commit-message"
+    "eslint",
+    "warnings",
+    "approval",
+    "lint"
   ],
   "license": "MIT",
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
+    "kleur": "^3.0.3",
     "prompts": "^2.4.2",
     "zod": "^3.23.8"
   },

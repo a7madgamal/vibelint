@@ -1,11 +1,11 @@
-# @vibelint/roasted-commit
+# @vibelint/vibelint-commit
 
 AI-powered commit message generator using Ollama.
 
 ## Install
 
 ```bash
-npm install -D @vibelint/roasted-commit
+npm install -D @vibelint/vibelint-commit
 ```
 
 ## Usage
@@ -13,7 +13,7 @@ npm install -D @vibelint/roasted-commit
 ```json
 {
   "scripts": {
-    "commit": "vibelint-roasted-commit"
+    "commit": "vibelint-commit"
   }
 }
 ```

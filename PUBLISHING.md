@@ -23,7 +23,7 @@ pnpm publish:check
 pnpm publish:all
 
 # 5. Tag release
-VERSION=$(node -p "require('./packages/roastedCommit/package.json').version")
+VERSION=$(node -p "require('./packages/vibelint-commit/package.json').version")
 git add . && git commit -m "chore: release v${VERSION}"
 git tag "v${VERSION}" && git push && git push --tags
 ```

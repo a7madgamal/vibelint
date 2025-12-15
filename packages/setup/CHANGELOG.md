@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Interactive prompts for tool selection
 - Auto-detection of package manager and ESLint config
 - Support for npm, pnpm, and yarn
-- Installation of @vibelint/roasted-commit
-- Installation of @vibelint/eslint-warning-approval
-- Installation of @vibelint/eslint-plugin-suppress-approved
+- Installation of @vibelint/vibelint-commit
+- Installation of @vibelint/vibelint-wizard
+- Installation of @vibelint/eslint-plugin-vibelint
 - Automatic script addition to package.json
