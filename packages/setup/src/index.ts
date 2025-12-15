@@ -84,7 +84,9 @@ function writePackageJson(pkg: PackageJson): void {
 }
 
 function installPackage(packageManager: PackageManager, packageName: string): boolean {
-  const args = packageManager === "pnpm" ? ["add", "-D", packageName] : ["install", "-D", packageName]
+  // Always install latest version
+  const pkgWithVersion = `${packageName}@latest`
+  const args = packageManager === "pnpm" ? ["add", "-D", pkgWithVersion] : ["install", "-D", pkgWithVersion]
   if (packageManager === "yarn") {
     args[0] = "add"
     args.push("--dev")
