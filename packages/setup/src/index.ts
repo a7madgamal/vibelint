@@ -90,13 +90,6 @@ function addScriptsToPackageJson(pkg: PackageJson, scriptsToAdd: Record<string, 
   // Use the already-read package.json object - merge scripts and write back
   // This ensures we never lose packages since we're using the object that already has them
 
-  // DEBUG: Log packages before adding scripts
-  const packagesBefore = [...Object.keys(pkg.devDependencies || {}), ...Object.keys(pkg.dependencies || {})]
-  console.log(kleur.dim(`[DEBUG] Packages before adding scripts: ${packagesBefore.length} total`))
-  const targetPackages = ["@vibelint/vibelint-commit", "@vibelint/vibelint-wizard", "@vibelint/eslint-plugin-vibelint"]
-  const foundBefore = targetPackages.filter((p) => packagesBefore.includes(p))
-  console.log(kleur.dim(`[DEBUG] Target packages found: ${foundBefore.join(", ") || "NONE"}`))
-
   if (!pkg.scripts) {
     pkg.scripts = {}
   }
@@ -107,41 +100,7 @@ function addScriptsToPackageJson(pkg: PackageJson, scriptsToAdd: Record<string, 
   // Write back the complete package.json
   try {
     const packageJsonPath = join(process.cwd(), "package.json")
-    const jsonToWrite = JSON.stringify(pkg, null, 2) + "\n"
-
-    // DEBUG: Verify packages are still in the object we're writing
-    const packagesInWrite = [...Object.keys(pkg.devDependencies || {}), ...Object.keys(pkg.dependencies || {})]
-    const foundInWrite = targetPackages.filter((p) => packagesInWrite.includes(p))
-    console.log(kleur.dim(`[DEBUG] Packages in object being written: ${foundInWrite.join(", ") || "NONE"}`))
-
-    if (foundInWrite.length < foundBefore.length) {
-      console.error(
-        kleur.red(`[DEBUG] ERROR: Lost packages! Had ${foundBefore.length}, writing ${foundInWrite.length}`)
-      )
-      console.error(kleur.red(`[DEBUG] Before: ${foundBefore.join(", ")}`))
-      console.error(kleur.red(`[DEBUG] Writing: ${foundInWrite.join(", ")}`))
-    }
-
-    writeFileSync(packageJsonPath, jsonToWrite, "utf-8")
-
-    // DEBUG: Read back immediately to verify
-    const pkgAfterWrite = readPackageJson()
-    const packagesAfter = [
-      ...Object.keys(pkgAfterWrite.devDependencies || {}),
-      ...Object.keys(pkgAfterWrite.dependencies || {})
-    ]
-    const foundAfter = targetPackages.filter((p) => packagesAfter.includes(p))
-    console.log(kleur.dim(`[DEBUG] Packages after write (read back): ${foundAfter.join(", ") || "NONE"}`))
-
-    if (foundAfter.length < foundBefore.length) {
-      console.error(
-        kleur.red(
-          `[DEBUG] CRITICAL: Packages missing after write! Expected ${foundBefore.length}, got ${foundAfter.length}`
-        )
-      )
-      return false
-    }
-
+    writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2) + "\n", "utf-8")
     return true
   } catch (error) {
     console.error(
@@ -332,11 +291,6 @@ async function main() {
 
   // Read package.json first
   const initialPkg = readPackageJson()
-  console.log(
-    kleur.dim(
-      `[DEBUG] Initial package.json read. Dependencies: ${Object.keys(initialPkg.devDependencies || {}).length} dev, ${Object.keys(initialPkg.dependencies || {}).length} prod`
-    )
-  )
 
   // Add scripts to package.json FIRST (before installing packages)
   console.log(kleur.blue("Updating package.json scripts...\n"))
@@ -377,30 +331,11 @@ async function main() {
   let allInstalled = true
   for (const pkgName of packagesToInstall) {
     console.log(kleur.cyan(`Installing ${pkgName}...`))
-
-    // DEBUG: Read package.json before install
-    const pkgBeforeInstall = readPackageJson()
-    const depsBefore = Object.keys(pkgBeforeInstall.devDependencies || {}).length
-
     if (!installPackage(packageManager, pkgName)) {
       console.error(kleur.red(`Failed to install ${pkgName}`))
       allInstalled = false
     } else {
-      // DEBUG: Read package.json after install
-      await new Promise((resolve) => setTimeout(resolve, 200)) // Small delay
-      const pkgAfterInstall = readPackageJson()
-      const depsAfter = Object.keys(pkgAfterInstall.devDependencies || {}).length
-      const hasPackage = pkgAfterInstall.devDependencies?.[pkgName] || pkgAfterInstall.dependencies?.[pkgName]
-
-      console.log(kleur.dim(`[DEBUG] Before install: ${depsBefore} devDeps, After: ${depsAfter} devDeps`))
-      console.log(kleur.dim(`[DEBUG] Package ${pkgName} found: ${hasPackage ? "YES" : "NO"}`))
-
-      if (hasPackage) {
-        console.log(kleur.green(`✓ Installed ${pkgName}\n`))
-      } else {
-        console.error(kleur.red(`[DEBUG] ERROR: ${pkgName} not found in package.json after install!\n`))
-        allInstalled = false
-      }
+      console.log(kleur.green(`✓ Installed ${pkgName}\n`))
     }
   }
 
@@ -408,16 +343,6 @@ async function main() {
     console.error(kleur.red("\nSome packages failed to install. Please install them manually."))
     process.exit(1)
   }
-
-  // DEBUG: Final check after all installations
-  const finalPkgCheck = readPackageJson()
-  const finalDeps = Object.keys(finalPkgCheck.devDependencies || {}).length
-  const finalPackages = packagesToInstall.filter(
-    (p) => finalPkgCheck.devDependencies?.[p] || finalPkgCheck.dependencies?.[p]
-  )
-  console.log(
-    kleur.dim(`[DEBUG] Final check: ${finalDeps} devDeps, Packages installed: ${finalPackages.join(", ") || "NONE"}`)
-  )
 
   console.log()
 
