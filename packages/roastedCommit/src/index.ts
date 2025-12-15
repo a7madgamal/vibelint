@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from "node:child_process"
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
 import http from "node:http"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+
 import prompts from "prompts"
 import { z } from "zod"
 
 const OLLAMA_BASE_URL = process.env.VIBELINT_OLLAMA_URL || "http://127.0.0.1:11434"
-const CONFIG_FILE = join(process.cwd(), ".commit-config.json")
-const CACHE_FILE = join(process.cwd(), ".commit-message-cache.json")
+const CONFIG_FILE = join(process.cwd(), "node_modules", ".cache", "vibelint", "commit-config.json")
+const CACHE_FILE = join(process.cwd(), "node_modules", ".cache", "vibelint", "commit-message-cache.json")
 
 const OllamaTagsSchema = z.object({
   models: z.array(
@@ -67,6 +68,13 @@ async function getAvailableModels(): Promise<string[]> {
   })
 }
 
+function ensureCacheDir(): void {
+  const cacheDir = dirname(CONFIG_FILE)
+  if (!existsSync(cacheDir)) {
+    mkdirSync(cacheDir, { recursive: true })
+  }
+}
+
 function loadConfig(): Config | null {
   if (!existsSync(CONFIG_FILE)) {
     return null
@@ -85,6 +93,7 @@ function loadConfig(): Config | null {
 }
 
 function saveConfig(config: Config): void {
+  ensureCacheDir()
   writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8")
 }
 
@@ -365,6 +374,7 @@ ${diff}`
 }
 
 function saveCachedMessage(message: string): void {
+  ensureCacheDir()
   writeFileSync(CACHE_FILE, JSON.stringify({ message, timestamp: Date.now() }, null, 2), "utf-8")
 }
 
@@ -498,13 +508,14 @@ async function main() {
   }
 
   // Get available models and check if Ollama is running
+  const RECOMMENDED_MODEL = "deepseek-v3.1:671b-cloud"
   let availableModels: string[]
   try {
     availableModels = await getAvailableModels()
     if (availableModels.length === 0) {
-      console.error(
-        "❌ No Ollama models found. Please install at least one model (e.g., `ollama pull mistral-openorca`)."
-      )
+      console.error("❌ No Ollama models found.")
+      console.log("\nTo install the recommended model, run:")
+      console.log(`  ollama pull ${RECOMMENDED_MODEL}`)
       process.exit(1)
     }
   } catch (error: unknown) {
@@ -512,19 +523,50 @@ async function main() {
     process.exit(1)
   }
 
-  // Select model (will preselect previously chosen one if available)
-  // Fast mode: if config exists, use it without prompting
+  // Check if recommended model is available
+  const hasRecommendedModel = availableModels.some((model) => model === RECOMMENDED_MODEL)
+
   let selectedModel: string
-  const config = loadConfig()
-  if (config) {
-    const foundModel = availableModels.find((model) => model === config.selectedModel)
-    if (foundModel) {
-      selectedModel = foundModel
-      console.log(`⚡ Using saved model "${selectedModel}"`)
-    } else {
-      selectedModel = await selectModel(availableModels)
-    }
+  if (hasRecommendedModel) {
+    // Use recommended model without asking
+    selectedModel = RECOMMENDED_MODEL
+    console.log(`⚡ Using ${selectedModel}`)
   } else {
+    // Show setup instructions for recommended model
+    console.log(`\n💡 Recommended model "${RECOMMENDED_MODEL}" not found.`)
+    console.log("To install it, run:")
+    console.log(`  ollama pull ${RECOMMENDED_MODEL}`)
+    console.log("\nAvailable models on your system:")
+    availableModels.forEach((model) => console.log(`  - ${model}`))
+
+    // Ask if user wants to use an available model or exit to install recommended
+    const { action } = await prompts(
+      {
+        type: "select",
+        name: "action",
+        message: "What would you like to do?",
+        choices: [
+          { title: "Use an available model", value: "use-available" },
+          { title: "Exit to install recommended model", value: "exit" }
+        ],
+        initial: 0,
+        stdin: process.stdin,
+        stdout: process.stdout
+      },
+      {
+        onCancel: () => {
+          console.log("\nCancelled by user. Exiting.")
+          process.exit(1)
+        }
+      }
+    )
+
+    if (action === "exit") {
+      console.log(`\nRun: ollama pull ${RECOMMENDED_MODEL}`)
+      process.exit(0)
+    }
+
+    // Select from available models
     selectedModel = await selectModel(availableModels)
   }
 

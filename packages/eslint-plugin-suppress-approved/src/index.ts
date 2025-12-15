@@ -122,7 +122,11 @@ function filterApprovedMessages(
 }
 
 // ESLint 9 flat config plugin
-const suppressApprovedPlugin = {
+const suppressApprovedPlugin: {
+  meta: { name: string; version: string }
+  processors: Record<string, unknown>
+  configs?: Record<string, unknown[]>
+} = {
   meta: {
     name: "@vibelint/eslint-plugin-suppress-approved",
     version: "0.1.0"
@@ -209,6 +213,40 @@ const suppressApprovedPlugin = {
       supportsAutofix: false
     }
   }
+}
+
+// Add configs after the plugin is defined to avoid circular reference
+suppressApprovedPlugin.configs = {
+  recommended: [
+    {
+      files: ["**/*.js"],
+      plugins: {
+        "suppress-approved": suppressApprovedPlugin
+      },
+      processor: "suppress-approved/js"
+    },
+    {
+      files: ["**/*.ts"],
+      plugins: {
+        "suppress-approved": suppressApprovedPlugin
+      },
+      processor: "suppress-approved/ts"
+    },
+    {
+      files: ["**/*.jsx"],
+      plugins: {
+        "suppress-approved": suppressApprovedPlugin
+      },
+      processor: "suppress-approved/jsx"
+    },
+    {
+      files: ["**/*.tsx"],
+      plugins: {
+        "suppress-approved": suppressApprovedPlugin
+      },
+      processor: "suppress-approved/tsx"
+    }
+  ]
 }
 
 export default suppressApprovedPlugin

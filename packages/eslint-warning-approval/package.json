@@ -1,6 +1,6 @@
 {
   "name": "@vibelint/eslint-warning-approval",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Interactive ESLint warning approval tool",
   "type": "module",
   "main": "./dist/index.js",
