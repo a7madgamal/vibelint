@@ -240,29 +240,6 @@ async function main() {
   );
   console.log();
 
-  // Confirm package manager
-  const {confirmed} = await prompts(
-    {
-      type: "confirm",
-      name: "confirmed",
-      message: `Use ${packageManager} to install packages?`,
-      initial: true,
-      stdin: process.stdin,
-      stdout: process.stdout,
-    },
-    {
-      onCancel: () => {
-        console.log("\nCancelled by user. Exiting.");
-        process.exit(1);
-      },
-    }
-  );
-
-  if (!confirmed) {
-    console.log("Setup cancelled.");
-    process.exit(0);
-  }
-
   // Ask which tools to install
   const {toolSelection} = await prompts(
     {
