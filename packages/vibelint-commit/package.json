@@ -1,6 +1,6 @@
 {
   "name": "@vibelint/vibelint-commit",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "AI-powered commit message generator using Ollama",
   "type": "module",
   "main": "./dist/index.js",
