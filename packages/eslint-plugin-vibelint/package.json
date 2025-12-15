@@ -1,6 +1,6 @@
 {
   "name": "@vibelint/eslint-plugin-vibelint",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "ESLint plugin to suppress approved warnings based on cache file",
   "type": "module",
   "main": "./dist/index.js",

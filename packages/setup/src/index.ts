@@ -86,9 +86,15 @@ function readPackageJson(): PackageJson {
   return JSON.parse(content)
 }
 
-function writePackageJson(pkg: PackageJson): void {
-  const packageJsonPath = join(process.cwd(), "package.json")
-  writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2) + "\n", "utf-8")
+function setPackageScript(scriptName: string, scriptValue: string): boolean {
+  // Use npm pkg set to add scripts - this preserves all other package.json content
+  const result = spawnSync("npm", ["pkg", "set", `scripts.${scriptName}=${JSON.stringify(scriptValue)}`], {
+    stdio: ["ignore", "ignore", "inherit"],
+    cwd: process.cwd(),
+    shell: true,
+    windowsHide: true
+  })
+  return result.status === 0
 }
 
 function installPackage(packageManager: PackageManager, packageName: string): boolean {
@@ -107,6 +113,15 @@ function installPackage(packageManager: PackageManager, packageName: string): bo
     shell: true,
     windowsHide: true
   })
+
+  // Small delay to ensure package.json is fully written
+  if (result.status === 0) {
+    // Give the file system a moment to sync
+    const start = Date.now()
+    while (Date.now() - start < 100) {
+      // Busy wait for file system sync
+    }
+  }
 
   return result.status === 0
 }
@@ -291,30 +306,26 @@ async function main() {
     process.exit(1)
   }
 
-  // Re-read package.json after installation to get updated dependencies
-  const pkg = readPackageJson()
-
-  // Add scripts to package.json
+  // Add scripts to package.json using npm pkg set (preserves all other content)
   console.log(kleur.blue("Updating package.json scripts...\n"))
 
-  if (!pkg.scripts) {
-    pkg.scripts = {}
-  }
-
   if (selection === "commit-only") {
-    pkg.scripts.commit = "vibelint-commit"
-    console.log(kleur.green("✓ Added script: commit"))
+    if (setPackageScript("commit", "vibelint-commit")) {
+      console.log(kleur.green("✓ Added script: commit"))
+    }
   } else if (selection === "lint-only") {
-    pkg.scripts["commit-wizard"] = "vibelint-wizard"
-    console.log(kleur.green("✓ Added script: commit-wizard"))
+    if (setPackageScript("commit-wizard", "vibelint-wizard")) {
+      console.log(kleur.green("✓ Added script: commit-wizard"))
+    }
   } else if (selection === "both") {
-    pkg.scripts.commit = "vibelint-wizard && git add .eslint-warnings-cache.json && vibelint-commit"
-    pkg.scripts["commit-wizard"] = "vibelint-wizard"
-    console.log(kleur.green("✓ Added script: commit"))
-    console.log(kleur.green("✓ Added script: commit-wizard"))
+    if (setPackageScript("commit", "vibelint-wizard && git add .eslint-warnings-cache.json && vibelint-commit")) {
+      console.log(kleur.green("✓ Added script: commit"))
+    }
+    if (setPackageScript("commit-wizard", "vibelint-wizard")) {
+      console.log(kleur.green("✓ Added script: commit-wizard"))
+    }
   }
 
-  writePackageJson(pkg)
   console.log()
 
   // Show ESLint plugin instructions if plugin was installed
@@ -333,6 +344,7 @@ async function main() {
   }
 
   console.log(`\n${kleur.cyan("Available scripts:")}`)
+  const pkg = readPackageJson()
   if (pkg.scripts?.commit) {
     console.log(kleur.dim(`  ${packageManager === "pnpm" ? "pnpm" : "npm"} run commit`))
   }
