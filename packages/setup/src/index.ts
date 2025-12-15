@@ -1,4 +1,12 @@
 #!/usr/bin/env node
+
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃                                                                        ┃
+// ┃  ⚠️  REMINDER: UPDATE CHANGELOG.md WHEN MAKING CHANGES!  ⚠️           ┃
+// ┃                                                                        ┃
+// ┃  Location: packages/setup/CHANGELOG.md                                ┃
+// ┃                                                                        ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 import { spawnSync } from "child_process"
 import { existsSync, readFileSync, writeFileSync } from "fs"
 import { join } from "path"
