@@ -261,9 +261,6 @@ async function main() {
     installPlugin = pluginChoice === true
   }
 
-  // Read package.json
-  const pkg = readPackageJson()
-
   // Install packages
   console.log(`\n${kleur.blue("Installing packages...")}\n`)
 
@@ -293,6 +290,9 @@ async function main() {
     console.error(kleur.red("\nSome packages failed to install. Please install them manually."))
     process.exit(1)
   }
+
+  // Re-read package.json after installation to get updated dependencies
+  const pkg = readPackageJson()
 
   // Add scripts to package.json
   console.log(kleur.blue("Updating package.json scripts...\n"))
