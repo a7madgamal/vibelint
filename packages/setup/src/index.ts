@@ -126,12 +126,12 @@ function showESLintPluginInstructions(configFormat: ESLintConfigFormat): void {
   if (configFormat === "flat") {
     console.log(kleur.green("For ESLint flat config (eslint.config.mjs/js/ts):\n"))
     console.log(kleur.white("1. Import the plugin:"))
-    console.log(kleur.gray('   import suppressApprovedPlugin from "@vibelint/eslint-plugin-vibelint"\n'))
+    console.log(kleur.gray('   import vibelintPlugin from "@vibelint/eslint-plugin-vibelint"\n'))
     console.log(kleur.white("2. Add to your config array:"))
     console.log(
       kleur.gray(`   export default [
      // ... your other configs
-     ...suppressApprovedPlugin.configs.recommended,
+     ...vibelintPlugin.configs.recommended
    ]`)
     )
   } else {

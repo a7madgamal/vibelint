@@ -122,7 +122,7 @@ function filterApprovedMessages(
 }
 
 // ESLint 9 flat config plugin
-const suppressApprovedPlugin: {
+const vibelintPlugin: {
   meta: { name: string; version: string }
   processors: Record<string, unknown>
   configs?: Record<string, unknown[]>
@@ -216,37 +216,37 @@ const suppressApprovedPlugin: {
 }
 
 // Add configs after the plugin is defined to avoid circular reference
-suppressApprovedPlugin.configs = {
+vibelintPlugin.configs = {
   recommended: [
     {
       files: ["**/*.js"],
       plugins: {
-        "suppress-approved": suppressApprovedPlugin
+        "suppress-approved": vibelintPlugin
       },
       processor: "suppress-approved/js"
     },
     {
       files: ["**/*.ts"],
       plugins: {
-        "suppress-approved": suppressApprovedPlugin
+        "suppress-approved": vibelintPlugin
       },
       processor: "suppress-approved/ts"
     },
     {
       files: ["**/*.jsx"],
       plugins: {
-        "suppress-approved": suppressApprovedPlugin
+        "suppress-approved": vibelintPlugin
       },
       processor: "suppress-approved/jsx"
     },
     {
       files: ["**/*.tsx"],
       plugins: {
-        "suppress-approved": suppressApprovedPlugin
+        "suppress-approved": vibelintPlugin
       },
       processor: "suppress-approved/tsx"
     }
   ]
 }
 
-export default suppressApprovedPlugin
+export default vibelintPlugin

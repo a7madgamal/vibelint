@@ -11,11 +11,11 @@ npm install -D @vibelint/eslint-plugin-vibelint
 ## Flat Config
 
 ```js
-import suppressApprovedPlugin from "@vibelint/eslint-plugin-vibelint"
+import vibelintPlugin from "@vibelint/eslint-plugin-vibelint"
 
 export default [
   // ... your other configs
-  ...suppressApprovedPlugin.configs.recommended
+  ...vibelintPlugin.configs.recommended
 ]
 ```
 
