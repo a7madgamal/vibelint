@@ -27,12 +27,20 @@ function detectPackageManager(): PackageManager {
   }
 
   // Check which command is available
-  const pnpmCheck = spawnSync("pnpm", ["--version"], {stdio: "ignore"});
+  const pnpmCheck = spawnSync("pnpm", ["--version"], {
+    stdio: "ignore",
+    shell: true,
+    windowsHide: true,
+  });
   if (pnpmCheck.status === 0) {
     return "pnpm";
   }
 
-  const yarnCheck = spawnSync("yarn", ["--version"], {stdio: "ignore"});
+  const yarnCheck = spawnSync("yarn", ["--version"], {
+    stdio: "ignore",
+    shell: true,
+    windowsHide: true,
+  });
   if (yarnCheck.status === 0) {
     return "yarn";
   }
@@ -101,8 +109,10 @@ function installPackage(
 
   console.log(kleur.dim(`Running: ${packageManager} ${args.join(" ")}`));
   const result = spawnSync(packageManager, args, {
-    stdio: "inherit",
+    stdio: ["ignore", "inherit", "inherit"],
     cwd: process.cwd(),
+    shell: true,
+    windowsHide: true,
   });
 
   return result.status === 0;
@@ -399,8 +409,10 @@ async function main() {
 
         if (!existsSync(huskyDir)) {
           spawnSync("npx", ["husky", "init"], {
-            stdio: "inherit",
+            stdio: ["ignore", "inherit", "inherit"],
             cwd: process.cwd(),
+            shell: true,
+            windowsHide: true,
           });
         }
 
