@@ -8,7 +8,7 @@
 // ┃                                                                        ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 import { spawnSync } from "child_process"
-import { existsSync, readFileSync, writeFileSync } from "fs"
+import { existsSync, readFileSync } from "fs"
 import { join } from "path"
 
 import kleur from "kleur"
@@ -86,15 +86,22 @@ function readPackageJson(): PackageJson {
   return JSON.parse(content)
 }
 
-function setPackageScript(scriptName: string, scriptValue: string): boolean {
-  // Use npm pkg set to add scripts - this preserves all other package.json content
-  const result = spawnSync("npm", ["pkg", "set", `scripts.${scriptName}=${JSON.stringify(scriptValue)}`], {
-    stdio: ["ignore", "ignore", "inherit"],
-    cwd: process.cwd(),
-    shell: true,
-    windowsHide: true
-  })
-  return result.status === 0
+function addScriptsToPackageJson(scriptsToAdd: Record<string, string>): boolean {
+  // Use npm pkg set for each script individually - this is atomic and preserves everything
+  let allSuccess = true
+  for (const [scriptName, scriptValue] of Object.entries(scriptsToAdd)) {
+    const result = spawnSync("npm", ["pkg", "set", `scripts.${scriptName}=${JSON.stringify(scriptValue)}`], {
+      stdio: ["ignore", "ignore", "inherit"],
+      cwd: process.cwd(),
+      shell: true,
+      windowsHide: true
+    })
+    if (result.status !== 0) {
+      allSuccess = false
+      console.error(kleur.red(`Failed to add script: ${scriptName}`))
+    }
+  }
+  return allSuccess
 }
 
 function installPackage(packageManager: PackageManager, packageName: string): boolean {
@@ -306,24 +313,28 @@ async function main() {
     process.exit(1)
   }
 
-  // Add scripts to package.json using npm pkg set (preserves all other content)
+  // Small delay to ensure package.json is fully written by npm/pnpm
+  await new Promise((resolve) => setTimeout(resolve, 500))
+
+  // Add scripts to package.json using npm pkg set (separate command, preserves everything)
   console.log(kleur.blue("Updating package.json scripts...\n"))
 
+  const scriptsToAdd: Record<string, string> = {}
   if (selection === "commit-only") {
-    if (setPackageScript("commit", "vibelint-commit")) {
-      console.log(kleur.green("✓ Added script: commit"))
-    }
+    scriptsToAdd.commit = "vibelint-commit"
   } else if (selection === "lint-only") {
-    if (setPackageScript("commit-wizard", "vibelint-wizard")) {
-      console.log(kleur.green("✓ Added script: commit-wizard"))
-    }
+    scriptsToAdd["commit-wizard"] = "vibelint-wizard"
   } else if (selection === "both") {
-    if (setPackageScript("commit", "vibelint-wizard && git add .eslint-warnings-cache.json && vibelint-commit")) {
-      console.log(kleur.green("✓ Added script: commit"))
+    scriptsToAdd.commit = "vibelint-wizard && git add .eslint-warnings-cache.json && vibelint-commit"
+    scriptsToAdd["commit-wizard"] = "vibelint-wizard"
+  }
+
+  if (addScriptsToPackageJson(scriptsToAdd)) {
+    for (const scriptName of Object.keys(scriptsToAdd)) {
+      console.log(kleur.green(`✓ Added script: ${scriptName}`))
     }
-    if (setPackageScript("commit-wizard", "vibelint-wizard")) {
-      console.log(kleur.green("✓ Added script: commit-wizard"))
-    }
+  } else {
+    console.error(kleur.red("Failed to add scripts to package.json"))
   }
 
   console.log()
