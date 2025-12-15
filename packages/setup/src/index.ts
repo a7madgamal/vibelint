@@ -248,7 +248,7 @@ async function main() {
       message: "Which tools would you like to install?",
       choices: [
         {
-          title: "Only commit message generation (@vibelint/roastedCommit)",
+          title: "Only commit message generation (@vibelint/roasted-commit)",
           value: "commit-only",
         },
         {
@@ -313,7 +313,7 @@ async function main() {
 
   const packagesToInstall: string[] = [];
   if (selection === "commit-only" || selection === "both") {
-    packagesToInstall.push("@vibelint/roastedCommit");
+    packagesToInstall.push("@vibelint/roasted-commit");
   }
   if (selection === "lint-only" || selection === "both") {
     packagesToInstall.push("@vibelint/eslint-warning-approval");

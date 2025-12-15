@@ -1,6 +1,6 @@
 {
-  "name": "@vibelint/roastedCommit",
-  "version": "0.1.1",
+  "name": "@vibelint/roasted-commit",
+  "version": "0.1.2",
   "description": "AI-powered commit message generator using Ollama",
   "type": "module",
   "main": "./dist/index.js",

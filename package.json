@@ -12,7 +12,7 @@
     "publish:check": "pnpm --filter \"{packages/*}\" publish --dry-run",
     "publish:all": "pnpm --filter \"{packages/*}\" publish --access public",
     "publish:plugin": "pnpm --filter @vibelint/eslint-plugin-suppress-approved publish --access public",
-    "publish:commit": "pnpm --filter @vibelint/roastedCommit publish --access public",
+    "publish:commit": "pnpm --filter @vibelint/roasted-commit publish --access public",
     "publish:approval": "pnpm --filter @vibelint/eslint-warning-approval publish --access public",
     "publish:setup": "pnpm --filter lintmyvibe publish --access public",
     "version:patch": "pnpm -r --filter \"{packages/*}\" exec pnpm version patch",
