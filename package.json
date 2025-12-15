@@ -1,0 +1,31 @@
+{
+  "name": "vibelint-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo for VibeLint packages",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter \"{packages/*}\" build",
+    "clean": "pnpm --filter \"{packages/*}\" clean",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "publish:check": "pnpm --filter \"{packages/*}\" publish --dry-run",
+    "publish:all": "pnpm --filter \"{packages/*}\" publish --access public",
+    "publish:plugin": "pnpm --filter @vibelint/eslint-plugin-suppress-approved publish --access public",
+    "publish:commit": "pnpm --filter @vibelint/roastedCommit publish --access public",
+    "publish:approval": "pnpm --filter @vibelint/eslint-warning-approval publish --access public",
+    "publish:setup": "pnpm --filter lintmyvibe publish --access public",
+    "version:patch": "pnpm --filter \"{packages/*}\" version patch",
+    "version:minor": "pnpm --filter \"{packages/*}\" version minor",
+    "version:major": "pnpm --filter \"{packages/*}\" version major",
+    "prepublishOnly": "pnpm build"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "5.9.3"
+  }
+}
