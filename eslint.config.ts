@@ -6,7 +6,7 @@ import promisePlugin from "eslint-plugin-promise"
 import { defineConfig } from "eslint/config"
 import tseslint from "typescript-eslint"
 
-// import suppressApprovedPlugin from "@vibelint/eslint-plugin-suppress-approved";
+import suppressApprovedPlugin from "@vibelint/eslint-plugin-suppress-approved"
 
 // ============================================================================
 // 1. Global Ignores (applies to ALL files)
@@ -179,7 +179,7 @@ export default defineConfig(
   baseConfig,
   nodeStrictConfig,
   testConfig,
-  configFilesConfig
+  configFilesConfig,
   // TODO: Uncomment after building the plugin
-  // ...suppressApprovedPlugin.configs.recommended,
+  ...(suppressApprovedPlugin.configs?.recommended ?? [])
 )
