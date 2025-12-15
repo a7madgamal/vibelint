@@ -14,13 +14,12 @@ npm install -D @vibelint/eslint-plugin-vibelint
 import suppressApprovedPlugin from "@vibelint/eslint-plugin-vibelint"
 
 export default [
-  {
-    files: ["**/*.{js,ts,jsx,tsx}"],
-    plugins: { "suppress-approved": suppressApprovedPlugin },
-    processor: "suppress-approved/js" // or /ts, /jsx, /tsx
-  }
+  // ... your other configs
+  ...suppressApprovedPlugin.configs.recommended
 ]
 ```
+
+The recommended config automatically handles `.js`, `.ts`, `.jsx`, and `.tsx` files with the appropriate processors.
 
 ## Legacy Config
 

@@ -23,6 +23,15 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^8.49.0
         version: 8.49.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
+      '@vibelint/eslint-plugin-vibelint':
+        specifier: ^0.1.7
+        version: 0.1.7(eslint@9.39.2(jiti@2.6.1))
+      '@vibelint/vibelint-commit':
+        specifier: ^0.1.7
+        version: 0.1.7
+      '@vibelint/vibelint-wizard':
+        specifier: ^0.1.7
+        version: 0.1.7
       eslint:
         specifier: ^9.39.2
         version: 9.39.2(jiti@2.6.1)
@@ -287,6 +296,22 @@ packages:
   '@typescript-eslint/visitor-keys@8.49.0':
     resolution: {integrity: sha512-LlKaciDe3GmZFphXIc79THF/YYBugZ7FS1pO581E/edlVVNbZKDy93evqmrfQ9/Y4uN0vVhX4iuchq26mK/iiA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@vibelint/eslint-plugin-vibelint@0.1.7':
+    resolution: {integrity: sha512-C+xG7unrlc8zadzu+Fcz5Q25acY27EDiVE6HWSyHMC7f7uKgBberYQMnAS9kdSmbRrZXw+SnL2shkJbdr36EZg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      eslint: '>=9.0.0'
+
+  '@vibelint/vibelint-commit@0.1.7':
+    resolution: {integrity: sha512-PD+cEqLkcXcgoC2jEbIl1A5TWVM9g/1BlPkVR9bUV+U7iayKg3bX+bPfpzQSAI7QJQTJ/Fw8s3xkwFSG6oqxcw==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  '@vibelint/vibelint-wizard@0.1.7':
+    resolution: {integrity: sha512-yZ7XVGKP7yBpQivzGzKSGlYj/xSjin29e62IIul8fxLd5M2RZg2syWbuWyQ1kylC/ZuwpG63Sln9GhV8U/1Kpg==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -899,6 +924,21 @@ snapshots:
     dependencies:
       '@typescript-eslint/types': 8.49.0
       eslint-visitor-keys: 4.2.1
+
+  '@vibelint/eslint-plugin-vibelint@0.1.7(eslint@9.39.2(jiti@2.6.1))':
+    dependencies:
+      eslint: 9.39.2(jiti@2.6.1)
+
+  '@vibelint/vibelint-commit@0.1.7':
+    dependencies:
+      prompts: 2.4.2
+      zod: 3.25.76
+
+  '@vibelint/vibelint-wizard@0.1.7':
+    dependencies:
+      kleur: 3.0.3
+      prompts: 2.4.2
+      zod: 3.25.76
 
   acorn-jsx@5.3.2(acorn@8.15.0):
     dependencies:
