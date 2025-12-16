@@ -1,6 +1,6 @@
 {
   "name": "@vibelint/vibelint-wizard",
-  "version": "0.1.19",
+  "version": "0.1.20",
   "description": "Interactive ESLint warning approval tool",
   "type": "module",
   "main": "./dist/index.js",
