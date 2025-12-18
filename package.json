@@ -22,7 +22,8 @@
     "commit-wizard": "vibelint-wizard",
     "test:wizard": "pnpm build && pnpm commit-wizard",
     "test:commit": "pnpm build && pnpm commit",
-    "test:all": "pnpm build && pnpm commit-wizard && echo 'Build and wizard completed successfully'"
+    "test:all": "pnpm build && pnpm commit-wizard && echo 'Build and wizard completed successfully'",
+    "ratemyshit": "pnpm --filter ratemyshit build && node packages/ratemyshit/dist/index.js"
   },
   "engines": {
     "node": ">=18",

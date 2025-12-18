@@ -1,0 +1,40 @@
+{
+  "name": "ratemyshit",
+  "version": "0.1.0",
+  "description": "Rate your frontend project and get sarcastic feedback with AI fix prompts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "ratemyshit": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "frontend",
+    "code-quality",
+    "analysis",
+    "linting",
+    "typescript",
+    "react",
+    "nextjs"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "boxen": "^8.0.1",
+    "kleur": "^3.0.3",
+    "prompts": "^2.4.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/prompts": "^2.4.9"
+  }
+}
