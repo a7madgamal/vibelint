@@ -75,21 +75,20 @@ export class PluginRegistry {
       } catch (error) {
         // Handle plugin errors gracefully
         console.error(`Error executing plugin ${plugin.id}:`, error)
+        const errorFinding = {
+          message: `Plugin ${plugin.id} failed to execute: ${error instanceof Error ? error.message : String(error)}`,
+          severity: "WTF" as const,
+          fixable: false
+        }
         results.set(plugin.id, {
-          counts: {
-            weight5: 0,
-            weight4: 0,
-            weight3: 0,
-            weight2: 0,
-            weight1: 0
-          },
-          findings: [
+          checks: [
             {
-              message: `Plugin ${plugin.id} failed to execute: ${error instanceof Error ? error.message : String(error)}`,
-              weight: 5, // Catastrophic - plugin failure
-              fixable: false
+              name: `Plugin ${plugin.id} execution`,
+              passed: false,
+              finding: errorFinding
             }
           ],
+          findings: [errorFinding],
           recommendations: [`Fix the error in plugin ${plugin.id}`]
         })
       }

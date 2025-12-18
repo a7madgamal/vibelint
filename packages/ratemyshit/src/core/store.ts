@@ -16,9 +16,11 @@ export interface PackageJson {
 export class ContextStore {
   private data: Map<string, unknown> = new Map()
   public readonly cwd: string
+  public readonly monorepoRoot?: string
 
-  constructor(initialData: { cwd: string; packageJson?: PackageJson }) {
+  constructor(initialData: { cwd: string; packageJson?: PackageJson; monorepoRoot?: string }) {
     this.cwd = initialData.cwd
+    this.monorepoRoot = initialData.monorepoRoot
     if (initialData.packageJson) {
       this.data.set("packageJson", initialData.packageJson)
     }
@@ -65,5 +67,20 @@ export class ContextStore {
 
   get packageJson(): PackageJson | undefined {
     return this.get<PackageJson>("packageJson")
+  }
+
+  /**
+   * Get the root directory to check for monorepo-level files.
+   * In a monorepo, this is the monorepo root. Otherwise, it's the current working directory.
+   */
+  get rootDir(): string {
+    return this.monorepoRoot ?? this.cwd
+  }
+
+  /**
+   * Check if we're in a monorepo context
+   */
+  get isMonorepo(): boolean {
+    return this.monorepoRoot !== undefined && this.monorepoRoot !== this.cwd
   }
 }

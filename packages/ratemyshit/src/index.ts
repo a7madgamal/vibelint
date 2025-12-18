@@ -7,7 +7,6 @@ import prompts from "prompts"
 import { PromptGenerator } from "./core/prompt-generator"
 import { PluginRegistry } from "./core/registry"
 import { Reporter } from "./core/reporter"
-import { Scorer } from "./core/scorer"
 import { ContextStore } from "./core/store"
 import { buildToolPlugin } from "./plugins/build-tool.plugin"
 import { eslintPlugin } from "./plugins/eslint.plugin"
@@ -18,10 +17,10 @@ import { testingPlugin } from "./plugins/testing.plugin"
 import { typescriptPlugin } from "./plugins/typescript.plugin"
 import { detectMonorepo, readPackageJson } from "./utils/detection"
 
-async function analyzeProject(cwd: string): Promise<void> {
+async function analyzeProject(cwd: string, monorepoRoot?: string): Promise<void> {
   // Initialize store with basic project data
   const packageJson = await readPackageJson(cwd)
-  const store = new ContextStore({ cwd, packageJson })
+  const store = new ContextStore({ cwd, packageJson, monorepoRoot })
 
   // Register all plugins
   const registry = new PluginRegistry()
@@ -37,10 +36,6 @@ async function analyzeProject(cwd: string): Promise<void> {
   const results = await registry.executeAll(store)
   const plugins = registry.getAllPlugins()
 
-  // Aggregate counts
-  const scorer = new Scorer()
-  const countResult = scorer.aggregateCounts(plugins, results)
-
   // Generate framework name for display
   const framework = store.framework
   const frameworkName = framework
@@ -49,7 +44,7 @@ async function analyzeProject(cwd: string): Promise<void> {
 
   // Display report
   const reporter = new Reporter()
-  reporter.displayReport(plugins, results, countResult.totalCounts, frameworkName)
+  reporter.displayReport(plugins, results, frameworkName)
 
   // Generate and print AI prompt
   const promptGenerator = new PromptGenerator()
@@ -70,7 +65,7 @@ async function main(): Promise<void> {
       if (!process.stdin.isTTY) {
         // Non-interactive mode - analyze root
         console.log(kleur.yellow("Non-interactive mode: analyzing monorepo root\n"))
-        await analyzeProject(cwd)
+        await analyzeProject(cwd, cwd)
         return
       }
 
@@ -111,11 +106,11 @@ async function main(): Promise<void> {
 
       if (response.target === "root") {
         console.log(kleur.blue("\nAnalyzing monorepo root...\n"))
-        await analyzeProject(cwd)
+        await analyzeProject(cwd, cwd)
       } else {
-        // Analyze specific package
+        // Analyze specific package - pass monorepo root
         console.log(kleur.blue(`\nAnalyzing ${relative(cwd, response.target)}...\n`))
-        await analyzeProject(response.target)
+        await analyzeProject(response.target, monorepo.rootPath)
       }
     } else {
       // Not a monorepo or no packages found - analyze current directory

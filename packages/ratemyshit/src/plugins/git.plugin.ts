@@ -1,50 +1,58 @@
 import { existsSync } from "fs"
 import { join } from "path"
 
-import type { Finding, Plugin, PluginResult } from "../core/plugin"
+import type { Check, Finding, Plugin, PluginResult } from "../core/plugin"
 import type { ContextStore } from "../core/store"
-import { countFindingsByWeight } from "../core/weight-converter"
 
 export const gitPlugin: Plugin = {
   id: "git",
   name: "Git Setup",
   description: "Detects git version control setup",
   enabled: true,
-  weight: 1.0,
   async detect(store: ContextStore): Promise<PluginResult> {
+    const checks: Check[] = []
     const findings: Finding[] = []
     const recommendations: string[] = []
 
-    const gitDir = join(store.cwd, ".git")
-    const gitignore = join(store.cwd, ".gitignore")
+    // In a monorepo, git files are at the root, not in the package directory
+    const rootDir = store.rootDir
+    const gitDir = join(rootDir, ".git")
+    const gitignore = join(rootDir, ".gitignore")
     const hasGit = existsSync(gitDir)
     const hasGitignore = existsSync(gitignore)
 
+    // Check: Git repository exists
     if (!hasGit) {
-      findings.push({
+      const finding: Finding = {
         message: "No git repository found. You're not using version control? Really?",
-        weight: 5, // Catastrophic - no version control
+        severity: "WTF",
         fixable: true,
         fixHint: "Run 'git init' to initialize a git repository"
-      })
+      }
+      findings.push(finding)
+      checks.push({ name: "Git repository initialized", passed: false, finding })
       recommendations.push("Initialize git repository with 'git init'")
     } else {
+      checks.push({ name: "Git repository initialized", passed: true })
+
+      // Check: .gitignore file exists
       if (!hasGitignore) {
-        findings.push({
+        const finding: Finding = {
           message: "No .gitignore file found. You're committing node_modules, aren't you?",
-          weight: 4, // High issue - missing gitignore
+          severity: "BIG",
           fixable: true,
           fixHint: "Create a .gitignore file to exclude unnecessary files"
-        })
+        }
+        findings.push(finding)
+        checks.push({ name: ".gitignore file exists", passed: false, finding })
         recommendations.push("Create a .gitignore file")
+      } else {
+        checks.push({ name: ".gitignore file exists", passed: true })
       }
-      // Git initialized and gitignore exists - no findings (positive state)
     }
 
-    const counts = countFindingsByWeight(findings)
-
     return {
-      counts,
+      checks,
       findings,
       recommendations
     }

@@ -1,23 +1,22 @@
 import { existsSync } from "fs"
 import { join } from "path"
 
-import type { Plugin, PluginResult } from "../core/plugin"
+import type { Check, Plugin, PluginResult } from "../core/plugin"
 import type { ContextStore, FrameworkInfo } from "../core/store"
-import { countFindingsByWeight } from "../core/weight-converter"
 
 export const frameworkPlugin: Plugin = {
   id: "framework",
   name: "Framework Detection",
   description: "Detects frontend framework (React, Next.js, Angular, Vue, etc.)",
   enabled: true,
-  weight: 0, // Informational only, not scored
   async detect(store: ContextStore): Promise<PluginResult> {
+    const checks: Check[] = []
     const recommendations: string[] = []
     const packageJson = store.packageJson
 
     if (!packageJson) {
       return {
-        counts: countFindingsByWeight([]),
+        checks: [{ name: "Framework detected", passed: false }],
         findings: [],
         recommendations: []
       }
@@ -28,10 +27,19 @@ export const frameworkPlugin: Plugin = {
 
     // Check for Next.js
     if (deps.next) {
-      const nextConfigPath = join(store.cwd, "next.config.js")
-      const nextConfigMjs = join(store.cwd, "next.config.mjs")
-      const nextConfigTs = join(store.cwd, "next.config.ts")
-      const hasNextConfig = existsSync(nextConfigPath) || existsSync(nextConfigMjs) || existsSync(nextConfigTs)
+      // In a monorepo, Next.js config might be at package level or root
+      const searchDirs = store.isMonorepo ? [store.cwd, store.rootDir] : [store.cwd]
+      let hasNextConfig = false
+
+      for (const searchDir of searchDirs) {
+        const nextConfigPath = join(searchDir, "next.config.js")
+        const nextConfigMjs = join(searchDir, "next.config.mjs")
+        const nextConfigTs = join(searchDir, "next.config.ts")
+        if (existsSync(nextConfigPath) || existsSync(nextConfigMjs) || existsSync(nextConfigTs)) {
+          hasNextConfig = true
+          break
+        }
+      }
 
       framework = {
         type: "nextjs",
@@ -39,11 +47,12 @@ export const frameworkPlugin: Plugin = {
         metadata: { hasConfig: hasNextConfig }
       }
       store.set("isNextJs", true)
-      store.set("isReact", true) // Next.js uses React
+      store.set("isReact", true)
       store.set("framework", framework)
 
+      checks.push({ name: "Framework detected (Next.js)", passed: true })
       return {
-        counts: countFindingsByWeight([]),
+        checks,
         findings: [],
         recommendations: []
       }
@@ -58,8 +67,9 @@ export const frameworkPlugin: Plugin = {
       store.set("isReact", true)
       store.set("framework", framework)
 
+      checks.push({ name: "Framework detected (React)", passed: true })
       return {
-        counts: countFindingsByWeight([]),
+        checks,
         findings: [],
         recommendations: []
       }
@@ -73,8 +83,9 @@ export const frameworkPlugin: Plugin = {
       }
       store.set("framework", framework)
 
+      checks.push({ name: "Framework detected (Angular)", passed: true })
       return {
-        counts: countFindingsByWeight([]),
+        checks,
         findings: [],
         recommendations: []
       }
@@ -88,8 +99,9 @@ export const frameworkPlugin: Plugin = {
       }
       store.set("framework", framework)
 
+      checks.push({ name: "Framework detected (Vue)", passed: true })
       return {
-        counts: countFindingsByWeight([]),
+        checks,
         findings: [],
         recommendations: []
       }
@@ -103,8 +115,9 @@ export const frameworkPlugin: Plugin = {
       }
       store.set("framework", framework)
 
+      checks.push({ name: "Framework detected (Svelte)", passed: true })
       return {
-        counts: countFindingsByWeight([]),
+        checks,
         findings: [],
         recommendations: []
       }
@@ -116,8 +129,9 @@ export const frameworkPlugin: Plugin = {
     }
     store.set("framework", framework)
 
+    checks.push({ name: "Framework detected (Vanilla)", passed: true })
     return {
-      counts: countFindingsByWeight([]),
+      checks,
       findings: [],
       recommendations: []
     }

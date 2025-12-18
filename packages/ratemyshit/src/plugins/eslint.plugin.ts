@@ -1,48 +1,67 @@
 import { existsSync } from "fs"
 import { join } from "path"
 
-import type { Finding, Plugin, PluginResult } from "../core/plugin"
+import type { Check, Finding, Plugin, PluginResult } from "../core/plugin"
 import type { ContextStore } from "../core/store"
-import { countFindingsByWeight } from "../core/weight-converter"
-import { readTextFile } from "../utils/detection"
+import { readJsonFile } from "../utils/detection"
 
 export const eslintPlugin: Plugin = {
   id: "eslint",
   name: "ESLint Configuration",
   description: "Detects ESLint setup and rule configuration",
   enabled: true,
-  weight: 1.5,
   dependencies: ["framework", "typescript"],
   async detect(store: ContextStore): Promise<PluginResult> {
+    const checks: Check[] = []
     const findings: Finding[] = []
     const recommendations: string[] = []
     const packageJson = store.packageJson
 
-    const deps = { ...packageJson?.dependencies, ...packageJson?.devDependencies }
-    const hasEslint = deps.eslint
+    // In a monorepo, ESLint might be in the root package.json
+    let deps = { ...packageJson?.dependencies, ...packageJson?.devDependencies }
+    let hasEslint = deps.eslint
 
-    if (!hasEslint) {
-      const findings: Finding[] = [
-        {
-          message: "ESLint not installed. Linting? We don't do that here.",
-          weight: 5, // Catastrophic - no linting at all
-          fixable: true,
-          fixHint: "Install ESLint: npm install -D eslint"
+    // If not found and we're in a monorepo, check root package.json
+    if (!hasEslint && store.isMonorepo) {
+      const rootPackageJson = await readJsonFile(store.rootDir, "package.json")
+      if (rootPackageJson) {
+        const rootDeps: Record<string, string> = {}
+        const depsValue = rootPackageJson.dependencies
+        const devDepsValue = rootPackageJson.devDependencies
+        if (depsValue && typeof depsValue === "object" && !Array.isArray(depsValue) && depsValue !== null) {
+          Object.assign(rootDeps, depsValue)
         }
-      ]
-      return {
-        counts: countFindingsByWeight(findings),
-        findings,
-        recommendations: ["Install ESLint as a dev dependency"]
+        if (devDepsValue && typeof devDepsValue === "object" && !Array.isArray(devDepsValue) && devDepsValue !== null) {
+          Object.assign(rootDeps, devDepsValue)
+        }
+        deps = { ...deps, ...rootDeps }
+        hasEslint = rootDeps.eslint
       }
     }
 
+    // Check: ESLint installed
+    if (!hasEslint) {
+      const finding: Finding = {
+        message: "ESLint not installed. Linting? We don't do that here.",
+        severity: "WTF",
+        fixable: true,
+        fixHint: "Install ESLint: npm install -D eslint"
+      }
+      findings.push(finding)
+      checks.push({ name: "ESLint installed", passed: false, finding })
+      recommendations.push("Install ESLint as a dev dependency")
+      return {
+        checks,
+        findings,
+        recommendations
+      }
+    }
+
+    checks.push({ name: "ESLint installed", passed: true })
     store.set("isEslintInstalled", true)
 
     // Check for flat config (ESLint 9+)
     const flatConfigs = ["eslint.config.mjs", "eslint.config.js", "eslint.config.ts", "eslint.config.cjs"]
-
-    // Check for legacy config
     const legacyConfigs = [
       ".eslintrc.json",
       ".eslintrc.js",
@@ -52,88 +71,106 @@ export const eslintPlugin: Plugin = {
       ".eslintrc"
     ]
 
+    // In a monorepo, ESLint config might be at the root or in the package
+    // Check root first (where shared configs are), then package
     let configFound = false
-    let configType: "flat" | "legacy" | undefined
+    const searchDirs = store.isMonorepo ? [store.rootDir, store.cwd] : [store.cwd]
 
-    for (const config of flatConfigs) {
-      if (existsSync(join(store.cwd, config))) {
-        configFound = true
-        configType = "flat"
-        break
-      }
-    }
-
-    if (!configFound) {
-      for (const config of legacyConfigs) {
-        if (existsSync(join(store.cwd, config))) {
+    for (const searchDir of searchDirs) {
+      for (const config of flatConfigs) {
+        if (existsSync(join(searchDir, config))) {
           configFound = true
-          configType = "legacy"
           break
         }
       }
+      if (configFound) break
     }
 
     if (!configFound) {
-      findings.push({
+      for (const searchDir of searchDirs) {
+        for (const config of legacyConfigs) {
+          if (existsSync(join(searchDir, config))) {
+            configFound = true
+            break
+          }
+        }
+        if (configFound) break
+      }
+    }
+
+    // Check: ESLint config file exists
+    if (!configFound) {
+      const finding: Finding = {
         message: "ESLint installed but no config file found. What's the point?",
-        weight: 5, // Catastrophic - ESLint installed but unusable
+        severity: "WTF",
         fixable: true,
         fixHint: "Create eslint.config.js or .eslintrc.json"
-      })
+      }
+      findings.push(finding)
+      checks.push({ name: "ESLint config file exists", passed: false, finding })
       recommendations.push("Create ESLint configuration file")
       return {
-        counts: countFindingsByWeight(findings),
+        checks,
         findings,
         recommendations
       }
     }
 
-    // ESLint + config found - no finding (positive state)
+    checks.push({ name: "ESLint config file exists", passed: true })
 
     // Framework-aware checks
     if (store.isReact) {
       const hasReactPlugin = deps["eslint-plugin-react"] || deps["@typescript-eslint/eslint-plugin"]
       if (!hasReactPlugin) {
-        findings.push({
+        const finding: Finding = {
           message: "React detected but eslint-plugin-react not installed",
-          weight: 3, // Medium issue - missing React plugin
+          severity: "BIG",
           fixable: true,
           fixHint: "Install eslint-plugin-react for React-specific linting rules"
-        })
+        }
+        findings.push(finding)
+        checks.push({ name: "React ESLint plugin installed", passed: false, finding })
         recommendations.push("Install eslint-plugin-react")
+      } else {
+        checks.push({ name: "React ESLint plugin installed", passed: true })
       }
-      // React plugin installed - no finding (positive state)
     }
 
     if (store.isTypeScript) {
       const hasTsPlugin = deps["@typescript-eslint/eslint-plugin"] || deps["typescript-eslint"]
       if (!hasTsPlugin) {
-        findings.push({
+        const finding: Finding = {
           message: "TypeScript detected but @typescript-eslint/eslint-plugin not installed",
-          weight: 4, // High issue - TypeScript without TS linting
+          severity: "BIG",
           fixable: true,
           fixHint: "Install @typescript-eslint/eslint-plugin for TypeScript linting"
-        })
+        }
+        findings.push(finding)
+        checks.push({ name: "TypeScript ESLint plugin installed", passed: false, finding })
         recommendations.push("Install @typescript-eslint/eslint-plugin")
+      } else {
+        checks.push({ name: "TypeScript ESLint plugin installed", passed: true })
       }
-      // TS plugin installed - no finding (positive state)
     }
 
     if (store.isNextJs) {
       const hasNextPlugin = deps["@next/eslint-plugin-next"]
       if (!hasNextPlugin) {
-        findings.push({
+        const finding: Finding = {
           message: "Next.js detected. Consider installing @next/eslint-plugin-next",
-          weight: 1, // Low issue - nice to have
+          severity: "SMOL",
           fixable: true
-        })
+        }
+        findings.push(finding)
+        checks.push({ name: "Next.js ESLint plugin installed", passed: false, finding })
         recommendations.push("Install @next/eslint-plugin-next for Next.js specific rules")
+      } else {
+        checks.push({ name: "Next.js ESLint plugin installed", passed: true })
       }
-      // Next.js plugin installed - no finding (positive state)
     }
 
     return {
-      counts: countFindingsByWeight(findings),
+      checks,
       findings,
       recommendations
     }

@@ -50,11 +50,10 @@ export class PromptGenerator {
     }
     lines.push("")
 
-    // Group findings by weight (single source of truth)
-    const criticalFindings: Array<{ plugin: string; finding: string; fixHint?: string }> = []
-    const highFindings: Array<{ plugin: string; finding: string; fixHint?: string }> = []
-    const mediumFindings: Array<{ plugin: string; finding: string; fixHint?: string }> = []
-    const lowFindings: Array<{ plugin: string; finding: string; fixHint?: string }> = []
+    // Group findings by severity (single source of truth)
+    const wtfFindings: Array<{ plugin: string; finding: string; fixHint?: string }> = []
+    const bigFindings: Array<{ plugin: string; finding: string; fixHint?: string }> = []
+    const smolFindings: Array<{ plugin: string; finding: string; fixHint?: string }> = []
 
     for (const plugin of plugins) {
       const result = results.get(plugin.id)
@@ -69,24 +68,21 @@ export class PromptGenerator {
           fixHint: finding.fixHint
         }
 
-        // Group by weight directly (weight is the single source of truth)
-        if (finding.weight >= 5) {
-          criticalFindings.push(entry)
-        } else if (finding.weight >= 4) {
-          highFindings.push(entry)
-        } else if (finding.weight >= 3) {
-          mediumFindings.push(entry)
-        } else if (finding.weight >= 1) {
-          lowFindings.push(entry)
+        // Group by severity directly (severity is the single source of truth)
+        if (finding.severity === "WTF") {
+          wtfFindings.push(entry)
+        } else if (finding.severity === "BIG") {
+          bigFindings.push(entry)
+        } else if (finding.severity === "SMOL") {
+          smolFindings.push(entry)
         }
-        // weight 0 findings are ignored (informational only)
       }
     }
 
     // Output findings by priority
-    if (criticalFindings.length > 0) {
-      lines.push("CRITICAL ISSUES (Fix these first):")
-      criticalFindings.forEach((item, idx) => {
+    if (wtfFindings.length > 0) {
+      lines.push("WTF ISSUES (Fix these first):")
+      wtfFindings.forEach((item, idx) => {
         lines.push(`  ${idx + 1}. [${item.plugin}] ${item.finding}`)
         if (item.fixHint) {
           lines.push(`     Fix: ${item.fixHint}`)
@@ -95,9 +91,9 @@ export class PromptGenerator {
       lines.push("")
     }
 
-    if (highFindings.length > 0) {
-      lines.push("HIGH PRIORITY ISSUES:")
-      highFindings.forEach((item, idx) => {
+    if (bigFindings.length > 0) {
+      lines.push("BIG ISSUES:")
+      bigFindings.forEach((item, idx) => {
         lines.push(`  ${idx + 1}. [${item.plugin}] ${item.finding}`)
         if (item.fixHint) {
           lines.push(`     Fix: ${item.fixHint}`)
@@ -106,20 +102,9 @@ export class PromptGenerator {
       lines.push("")
     }
 
-    if (mediumFindings.length > 0) {
-      lines.push("MEDIUM PRIORITY ISSUES:")
-      mediumFindings.forEach((item, idx) => {
-        lines.push(`  ${idx + 1}. [${item.plugin}] ${item.finding}`)
-        if (item.fixHint) {
-          lines.push(`     Fix: ${item.fixHint}`)
-        }
-      })
-      lines.push("")
-    }
-
-    if (lowFindings.length > 0) {
-      lines.push("LOW PRIORITY ISSUES:")
-      lowFindings.forEach((item, idx) => {
+    if (smolFindings.length > 0) {
+      lines.push("SMOL ISSUES:")
+      smolFindings.forEach((item, idx) => {
         lines.push(`  ${idx + 1}. [${item.plugin}] ${item.finding}`)
         if (item.fixHint) {
           lines.push(`     Fix: ${item.fixHint}`)

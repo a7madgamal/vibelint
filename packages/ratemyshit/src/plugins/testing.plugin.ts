@@ -2,18 +2,17 @@ import { existsSync } from "fs"
 import { readdir } from "fs/promises"
 import { join } from "path"
 
-import type { Finding, Plugin, PluginResult } from "../core/plugin"
+import type { Check, Finding, Plugin, PluginResult } from "../core/plugin"
 import type { ContextStore } from "../core/store"
-import { countFindingsByWeight } from "../core/weight-converter"
 
 export const testingPlugin: Plugin = {
   id: "testing",
   name: "Testing Setup",
   description: "Detects testing frameworks and test files",
   enabled: true,
-  weight: 1.2,
   dependencies: ["framework"],
   async detect(store: ContextStore): Promise<PluginResult> {
+    const checks: Check[] = []
     const findings: Finding[] = []
     const recommendations: string[] = []
     const packageJson = store.packageJson
@@ -25,7 +24,6 @@ export const testingPlugin: Plugin = {
     let hasTestFiles = false
 
     try {
-      // Check common test file locations
       const testDirs = ["__tests__", "test", "tests", "src/__tests__", "src/test", "src/tests"]
       for (const testDir of testDirs) {
         const testDirPath = join(store.cwd, testDir)
@@ -35,7 +33,6 @@ export const testingPlugin: Plugin = {
         }
       }
 
-      // Also check for test files in root
       if (!hasTestFiles) {
         const files = await readdir(store.cwd)
         hasTestFiles = files.some((file) => {
@@ -53,54 +50,77 @@ export const testingPlugin: Plugin = {
       // Ignore errors reading directory
     }
 
-    // Check for Vitest
+    // Check: Testing framework installed
     if (deps.vitest) {
+      checks.push({ name: "Testing framework installed (Vitest)", passed: true })
       store.set("testingFramework", { type: "vitest", version: deps.vitest })
 
+      // Check: Test files exist
       if (!hasTestFiles) {
-        findings.push({
+        const finding: Finding = {
           message: "Vitest installed but no test files found",
-          weight: 4, // High issue - framework without tests
+          severity: "BIG",
           fixable: true,
           fixHint: "Create test files with .test.ts or .spec.ts extension"
-        })
+        }
+        findings.push(finding)
+        checks.push({ name: "Test files exist", passed: false, finding })
         recommendations.push("Create test files")
         return {
-          counts: countFindingsByWeight(findings),
+          checks,
           findings,
           recommendations
         }
       }
-
-      // Vitest + test files found - no finding (positive state)
+      checks.push({ name: "Test files exist", passed: true })
       return {
-        counts: countFindingsByWeight(findings),
+        checks,
         findings,
         recommendations
       }
     }
 
-    // Check for Jest
     if (deps.jest) {
+      checks.push({ name: "Testing framework installed (Jest)", passed: true })
       store.set("testingFramework", { type: "jest", version: deps.jest })
 
+      // Check: Test files exist
       if (!hasTestFiles) {
-        findings.push({
+        const finding: Finding = {
           message: "Jest installed but no test files found",
-          weight: 4, // High issue - framework without tests
+          severity: "BIG",
           fixable: true
-        })
+        }
+        findings.push(finding)
+        checks.push({ name: "Test files exist", passed: false, finding })
         recommendations.push("Create test files")
         return {
-          counts: countFindingsByWeight(findings),
+          checks,
           findings,
           recommendations
         }
       }
-
-      // Jest + test files found - no finding (positive state)
+      checks.push({ name: "Test files exist", passed: true })
       return {
-        counts: countFindingsByWeight(findings),
+        checks,
+        findings,
+        recommendations
+      }
+    }
+
+    // Check: Testing framework installed
+    if (!hasTestFiles && !deps.jest && !deps.vitest) {
+      const finding: Finding = {
+        message: "No testing framework detected. You're not testing, are you?",
+        severity: "WTF",
+        fixable: true,
+        fixHint: "Install Jest or Vitest and create test files"
+      }
+      findings.push(finding)
+      checks.push({ name: "Testing framework installed", passed: false, finding })
+      recommendations.push("Install a testing framework (Jest or Vitest)")
+      return {
+        checks,
         findings,
         recommendations
       }
@@ -110,47 +130,38 @@ export const testingPlugin: Plugin = {
     if (store.isReact) {
       const hasReactTestingLib = deps["@testing-library/react"]
       if (!hasReactTestingLib) {
-        findings.push({
+        const finding: Finding = {
           message: "React detected but @testing-library/react not installed",
-          weight: 3, // Medium issue - React without testing lib
+          severity: "BIG",
           fixable: true,
           fixHint: "Install @testing-library/react for React component testing"
-        })
+        }
+        findings.push(finding)
+        checks.push({ name: "React testing library installed", passed: false, finding })
         recommendations.push("Install @testing-library/react")
+      } else {
+        checks.push({ name: "React testing library installed", passed: true })
       }
-      // React testing lib installed - no finding (positive state)
     }
 
     if (store.framework?.type === "vue") {
       const hasVueTestUtils = deps["@vue/test-utils"]
       if (!hasVueTestUtils) {
-        findings.push({
+        const finding: Finding = {
           message: "Vue detected but @vue/test-utils not installed",
-          weight: 3, // Medium issue
+          severity: "BIG",
           fixable: true
-        })
+        }
+        findings.push(finding)
+        checks.push({ name: "Vue test utils installed", passed: false, finding })
         recommendations.push("Install @vue/test-utils")
-      }
-      // Vue test utils installed - no finding (positive state)
-    }
-
-    if (!hasTestFiles && !deps.jest && !deps.vitest) {
-      findings.push({
-        message: "No testing framework detected. You're not testing, are you?",
-        weight: 5, // Catastrophic - no testing at all
-        fixable: true,
-        fixHint: "Install Jest or Vitest and create test files"
-      })
-      recommendations.push("Install a testing framework (Jest or Vitest)")
-      return {
-        counts: countFindingsByWeight(findings),
-        findings,
-        recommendations
+      } else {
+        checks.push({ name: "Vue test utils installed", passed: true })
       }
     }
 
     return {
-      counts: countFindingsByWeight(findings),
+      checks,
       findings,
       recommendations
     }

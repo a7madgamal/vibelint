@@ -1,6 +1,6 @@
 import { existsSync } from "fs"
 import { readdir, readFile } from "fs/promises"
-import { join, relative } from "path"
+import { join } from "path"
 
 import type { PackageJson } from "../core/store"
 
@@ -8,6 +8,10 @@ export interface MonorepoInfo {
   type: "pnpm" | "yarn" | "lerna" | "nx" | "rush" | "none"
   packages: string[]
   rootPath: string
+}
+
+function isPackageJson(value: unknown): value is PackageJson {
+  return typeof value === "object" && value !== null
 }
 
 export async function readPackageJson(cwd: string): Promise<PackageJson | undefined> {
@@ -18,7 +22,11 @@ export async function readPackageJson(cwd: string): Promise<PackageJson | undefi
 
   try {
     const content = await readFile(packageJsonPath, "utf-8")
-    return JSON.parse(content) as PackageJson
+    const parsed = JSON.parse(content)
+    if (isPackageJson(parsed)) {
+      return parsed
+    }
+    return undefined
   } catch {
     return undefined
   }
@@ -28,7 +36,15 @@ export function fileExists(cwd: string, filename: string): boolean {
   return existsSync(join(cwd, filename))
 }
 
-export async function readJsonFile<T>(cwd: string, filename: string): Promise<T | undefined> {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+function hasPackagesProperty(value: Record<string, unknown>): value is { packages?: string[] } {
+  return value.packages === undefined || Array.isArray(value.packages)
+}
+
+export async function readJsonFile(cwd: string, filename: string): Promise<Record<string, unknown> | undefined> {
   const filePath = join(cwd, filename)
   if (!existsSync(filePath)) {
     return undefined
@@ -36,7 +52,11 @@ export async function readJsonFile<T>(cwd: string, filename: string): Promise<T 
 
   try {
     const content = await readFile(filePath, "utf-8")
-    return JSON.parse(content) as T
+    const parsed: unknown = JSON.parse(content)
+    if (isRecord(parsed)) {
+      return parsed
+    }
+    return undefined
   } catch {
     return undefined
   }
@@ -108,7 +128,9 @@ export async function detectMonorepo(cwd: string): Promise<MonorepoInfo | undefi
   if (packageJson?.workspaces) {
     const workspaces = Array.isArray(packageJson.workspaces)
       ? packageJson.workspaces
-      : (packageJson.workspaces as { packages?: string[] })?.packages || []
+      : isRecord(packageJson.workspaces) && Array.isArray(packageJson.workspaces.packages)
+        ? packageJson.workspaces.packages
+        : []
     const packages: string[] = []
     for (const workspace of workspaces) {
       const pattern = workspace.replace(/\*\//g, "")
@@ -136,9 +158,9 @@ export async function detectMonorepo(cwd: string): Promise<MonorepoInfo | undefi
   const lernaJson = join(cwd, "lerna.json")
   if (existsSync(lernaJson)) {
     try {
-      const lerna = await readJsonFile<{ packages?: string[] }>(cwd, "lerna.json")
+      const lerna = await readJsonFile(cwd, "lerna.json")
       const packages: string[] = []
-      if (lerna?.packages) {
+      if (lerna && hasPackagesProperty(lerna) && lerna.packages) {
         for (const pattern of lerna.packages) {
           const basePath = join(cwd, pattern.replace(/\*\//g, ""))
           try {
