@@ -19,7 +19,10 @@
     "version:minor": "pnpm build && pnpm -r --filter \"{packages/*}\" exec pnpm version minor",
     "version:major": "pnpm build && pnpm -r --filter \"{packages/*}\" exec pnpm version major",
     "commit": "vibelint-wizard && git add .eslint-warnings-cache.json && vibelint-commit",
-    "commit-wizard": "vibelint-wizard"
+    "commit-wizard": "vibelint-wizard",
+    "test:wizard": "pnpm build && pnpm commit-wizard",
+    "test:commit": "pnpm build && pnpm commit",
+    "test:all": "pnpm build && pnpm commit-wizard && echo 'Build and wizard completed successfully'"
   },
   "engines": {
     "node": ">=18",
@@ -31,9 +34,9 @@
     "@types/node": "^24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",
-    "@vibelint/eslint-plugin-vibelint": "^0.1.19",
-    "@vibelint/vibelint-commit": "^0.1.19",
-    "@vibelint/vibelint-wizard": "^0.1.19",
+    "@vibelint/eslint-plugin-vibelint": "workspace:*",
+    "@vibelint/vibelint-commit": "workspace:*",
+    "@vibelint/vibelint-wizard": "workspace:*",
     "eslint": "^9.39.2",
     "eslint-plugin-eslint-comments": "^3.2.0",
     "eslint-plugin-promise": "^7.2.1",

@@ -98,8 +98,8 @@ function filterApprovedMessages(
   }
 
   const filtered = messages.filter((message) => {
-    // Only filter warnings (severity 1), not errors (severity 2)
-    if (!message || message.severity !== 1) {
+    // Filter both warnings (severity 1) and errors (severity 2)
+    if (!message || (message.severity !== 1 && message.severity !== 2)) {
       return true
     }
 
@@ -107,10 +107,10 @@ function filterApprovedMessages(
       const lineContent = message.source || readSourceLine(filename, message.line || 0)
       const fingerprint = createFingerprint(filename, message.ruleId || null, message.message || "", lineContent)
 
-      // Check if this warning is approved
+      // Check if this warning or error is approved
       const isApproved = cache.approvedWarnings.some((approved) => fingerprintMatches(approved, fingerprint))
 
-      // Return false to suppress approved warnings
+      // Return false to suppress approved warnings and errors
       return !isApproved
     } catch {
       // If there's an error filtering, keep the message

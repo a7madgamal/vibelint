@@ -303,6 +303,55 @@ async function saveCache(cache: CacheFile): Promise<void> {
   }
 }
 
+function getRuleInstruction(ruleId: string): string {
+  switch (ruleId) {
+    // TypeScript ESLint Rules
+    case "@typescript-eslint/ban-ts-comment":
+      return "DO NOT FIX THIS MESS BY ADDING A STUPID COMMENT. DO NOT USE ANOTHER TS HACK LIKE 'as', 'any', 'unknown',... FIX THE DAMN TS ERROR WITHOUT HACKS OR YOURE FIRED"
+    case "@typescript-eslint/no-unused-vars":
+      return "CHECK if the variable is actually unused before deleting. Look for exports, future use cases, or side effects. DO NOT delete without verification. Examine the entire codebase context, not just the immediate scope."
+    case "@typescript-eslint/consistent-type-assertions":
+      return "NEVER use 'as' type assertions. Think HARD about why this was needed. Can you use Zod for runtime validation? Can you improve the source type definition? IGNORING THE ERROR IS NOT A FIX. Find a proper solution or ask the user for clarification. Stop taking shortcuts."
+    case "@typescript-eslint/no-explicit-any":
+      return "REPLACE 'any' with proper types. Use generics, union types, or 'unknown' with type guards. DO NOT use 'any' as a crutch. Type your code properly."
+    case "@typescript-eslint/no-non-null-assertion":
+      return "REMOVE the '!' operator. Handle null/undefined properly with guards, optional chaining, or proper type narrowing. DO NOT assert non-null without verification."
+    case "@typescript-eslint/no-require-imports":
+      return "CONVERT require() to ES module import statements. Use import/export syntax. DO NOT use CommonJS require() in ES modules."
+    case "@typescript-eslint/no-dynamic-delete":
+      return "REPLACE dynamic property deletion with proper object manipulation. Use object destructuring, Object.assign, or create new objects. DO NOT use delete operator on dynamic keys."
+
+    // Promise Plugin Rules
+    case "promise/always-return":
+      return "ENSURE every promise chain branch returns a value. Check ALL branches, including error handlers. DO NOT leave promise chains without return values."
+    case "promise/catch-or-return":
+      return "HANDLE all promise rejections. Add .catch() handlers or return the promise. DO NOT leave promises unhandled. Every promise must have error handling."
+    case "promise/param-names":
+      return "USE Error objects for promise rejections, not strings. Create proper Error instances with meaningful messages. DO NOT reject with string values."
+    case "promise/no-return-wrap":
+      return "REMOVE unnecessary Promise.resolve/reject wrappers. Return the value directly. DO NOT wrap values that are already promises or values."
+    case "promise/prefer-await-to-then":
+      return "CONVERT .then() chains to async/await syntax. Use async functions and await keywords. DO NOT use promise chains when async/await is available."
+
+    // ESLint Comments Rules
+    case "eslint-comments/require-description":
+      return "FIX the actual problem instead of disabling the rule. If you MUST disable (and you better have a good reason), ADD a clear description explaining why. DO NOT disable rules without justification."
+    case "eslint-comments/disable-enable-pair":
+      return "PAIR your eslint-disable with a matching eslint-enable. Ensure every disable has a corresponding enable. DO NOT leave rules disabled indefinitely."
+    case "eslint-comments/no-unused-disable":
+      return "REMOVE the unused eslint-disable comment. It's not suppressing anything. DO NOT keep unnecessary disable comments."
+    case "eslint-comments/no-unused-enable":
+      return "REMOVE the unnecessary eslint-enable comment. The rule was never disabled. DO NOT enable rules that aren't disabled."
+
+    case "no-var":
+      return "REPLACE 'var' with 'let' or 'const'. Use modern variable declarations. DO NOT use 'var' - it's deprecated and causes scope issues."
+
+    // Default for unknown rules
+    default:
+      return "FIX these errors in a proper way. Look up the rule documentation and fix it correctly. DO NOT ignore it. DO NOT take shortcuts. If the next try fails, you will be in big trouble."
+  }
+}
+
 function runESLint(): ESLintFileResult[] {
   const result = spawnSync(ESLINT_CMD, [], {
     encoding: "utf-8",
@@ -377,7 +426,8 @@ async function processWarnings(): Promise<void> {
 
   for (const result of eslintResults) {
     for (const msg of result.messages) {
-      if (msg.severity === 1) {
+      // Process both warnings (severity 1) and errors (severity 2)
+      if (msg.severity === 1 || msg.severity === 2) {
         const lineContent = msg.source || (await readSourceLine(result.filePath, msg.line))
         const sourceContext = await readSourceContext(result.filePath, msg.line, 3)
         const fingerprint = createFingerprint(result.filePath, msg.ruleId, msg.message, lineContent)
@@ -399,7 +449,7 @@ async function processWarnings(): Promise<void> {
   if (warnings.length === 0) {
     console.log(
       kleur.green(
-        "✓ No ESLint warnings found. Either your code is perfect (unlikely) or your config is too lenient (probably)."
+        "✓ No ESLint warnings or errors found. Either your code is perfect (unlikely) or your config is too lenient (probably)."
       )
     )
     await saveCache(cache)
@@ -407,7 +457,7 @@ async function processWarnings(): Promise<void> {
   }
 
   console.log(
-    `Found ${kleur.yellow().bold(warnings.length.toString())} ${kleur.yellow("warning(s)")} (because of course you did). Checking against cache to see which ones are new...`
+    `Found ${kleur.yellow().bold(warnings.length.toString())} ${kleur.yellow("issue(s)")} (warnings and errors, because of course you did). Checking against cache to see which ones are new...`
   )
 
   const newWarnings = warnings.filter(
@@ -415,12 +465,12 @@ async function processWarnings(): Promise<void> {
   )
 
   if (newWarnings.length === 0) {
-    console.log(kleur.green("✓ All warnings are already approved (you've seen them all before, how exciting)."))
+    console.log(kleur.green("✓ All issues are already approved (you've seen them all before, how exciting)."))
     return
   }
 
   console.log(
-    `\nFound ${kleur.cyan().bold(newWarnings.length.toString())} ${kleur.yellow("new warning(s)")} that need your attention (because apparently you can't write perfect code on the first try):\n`
+    `\nFound ${kleur.cyan().bold(newWarnings.length.toString())} ${kleur.yellow("new issue(s)")} (warnings and errors) that need your attention (because apparently you can't write perfect code on the first try):\n`
   )
 
   const rejectedWarnings: Array<{
@@ -435,7 +485,13 @@ async function processWarnings(): Promise<void> {
 
   for (let i = 0; i < newWarnings.length; i++) {
     const warning = newWarnings[i]
-    console.log(`\n[${kleur.cyan().bold(`${i + 1}/${newWarnings.length}`)}] ${kleur.yellow().bold("Warning")}:`)
+    const isError = eslintResults.some(
+      (r) =>
+        r.filePath === warning.filePath &&
+        r.messages.some((m) => m.line === warning.line && m.column === warning.column && m.severity === 2)
+    )
+    const issueType = isError ? kleur.red().bold("Error") : kleur.yellow().bold("Warning")
+    console.log(`\n[${kleur.cyan().bold(`${i + 1}/${newWarnings.length}`)}] ${issueType}:`)
     console.log(
       `  ${kleur.dim("File")}: ${kleur.cyan(warning.fingerprint.file)}:${kleur.cyan().bold(warning.line.toString())}:${kleur.cyan().bold(warning.column.toString())}`
     )
@@ -568,74 +624,100 @@ async function processWarnings(): Promise<void> {
       kleur
         .red()
         .bold(
-          `❌ COMMIT ABORTED: ${kleur.yellow().bold(rejectedWarnings.length.toString())} ${kleur.yellow("warning(s)")} were rejected (because you said so)`
+          `❌ COMMIT ABORTED: ${kleur.yellow().bold(rejectedWarnings.length.toString())} ${kleur.yellow("issue(s)")} (warnings and errors) were rejected (because you said so)`
         )
     )
     console.log(kleur.red().bold("=".repeat(80)) + "\n")
 
     console.log(
-      kleur.yellow().bold("Here are the ESLint warnings that need to be fixed (you know, the ones you rejected):\n")
-    )
-
-    for (let i = 0; i < rejectedWarnings.length; i++) {
-      const w = rejectedWarnings[i]
-      console.log(
-        `${kleur.cyan().bold(`${i + 1}.`)} ${kleur.cyan(w.file)}:${kleur.cyan().bold(w.line.toString())}:${kleur.cyan().bold(w.column.toString())}`
-      )
-      console.log(`   ${kleur.dim("Rule")}: ${kleur.magenta(w.ruleId)}`)
-      console.log(`   ${kleur.dim("Message")}: ${kleur.white(w.message)}`)
-      if (w.codeContext && w.codeContext.length > 0) {
-        const contextStartLine = Math.max(1, w.line - 3)
-        console.log(`   ${kleur.dim("Code context")}:`)
-        w.codeContext.forEach((contextLine, idx) => {
-          const lineNum = contextStartLine + idx
-          const isWarningLine = lineNum === w.line
-          const marker = isWarningLine ? kleur.red().bold(">>>") : kleur.dim("   ")
-          const lineNumColor = isWarningLine ? kleur.red().bold : kleur.dim
-          const codeColor = isWarningLine ? kleur.red : kleur.gray
-          console.log(
-            `   ${marker} ${lineNumColor(lineNum.toString().padStart(4, " "))} ${kleur.dim("|")} ${codeColor(contextLine)}`
-          )
-        })
-      } else if (w.codeSnippet) {
-        console.log(`   ${kleur.dim("Code")}: ${kleur.gray(w.codeSnippet)}`)
-      }
-      console.log("")
-    }
-
-    console.log(`${kleur.cyan().bold("=".repeat(80))}`)
-    console.log(kleur.cyan().bold("AI-Friendly Fix Request (because apparently you need help):"))
-    console.log(kleur.cyan().bold("=".repeat(80)) + "\n")
-    console.log(kleur.yellow().bold("Hey, you dumb AI. My grandmother writes code better than this."))
-    console.log(
       kleur
         .yellow()
         .bold(
-          "FIX THOSE ERRORS. FAIL EARLY AND FAST. NO HACKS. NO UNDER-THE-RUG HALFWAY AI SLOP. THINK AS A DAMN ENGINEER FOR ONCE\n"
+          "Here are the ESLint issues (warnings and errors) that need to be fixed (you know, the ones you rejected):\n"
         )
     )
 
-    const warningsList = rejectedWarnings
-      .map((w, i) => {
-        let codeSection = ""
-        if (w.codeContext && w.codeContext.length > 0) {
-          const contextStartLine = Math.max(1, w.line - 3)
-          const contextLines = w.codeContext
-            .map((line, idx) => {
-              const lineNum = contextStartLine + idx
-              const marker = lineNum === w.line ? ">>>" : "   "
-              return `${marker} ${lineNum.toString().padStart(4, " ")} | ${line}`
-            })
-            .join("\n")
-          codeSection = `\n   Code context:\n${contextLines}`
-        } else if (w.codeSnippet) {
-          codeSection = `\n   Current code: ${w.codeSnippet}`
-        }
-        return `${i + 1}. ${w.file}:${w.line}:${w.column}\n   Rule: ${w.ruleId}\n   Issue: ${w.message}${codeSection}`
-      })
-      .join("\n\n")
+    // Group warnings by ruleId
+    const warningsByRule = new Map<string, typeof rejectedWarnings>()
+    for (const w of rejectedWarnings) {
+      const ruleId = w.ruleId || "unknown"
+      if (!warningsByRule.has(ruleId)) {
+        warningsByRule.set(ruleId, [])
+      }
+      const warningsArray = warningsByRule.get(ruleId)
+      if (warningsArray) {
+        warningsArray.push(w)
+      }
+    }
 
-    console.log(warningsList)
+    // Display grouped warnings
+    let displayIndex = 1
+    for (const [ruleId, warnings] of warningsByRule.entries()) {
+      const instruction = getRuleInstruction(ruleId)
+
+      console.log(`${kleur.cyan().bold(`${displayIndex}.`)} ${kleur.magenta().bold(`Rule: ${ruleId}`)}`)
+      console.log(`   ${kleur.dim("AI Instruction")}: ${kleur.yellow(instruction)}`)
+      console.log(`   ${kleur.dim("Locations")}:`)
+      warnings.forEach((w, idx) => {
+        console.log(
+          `      ${idx + 1}. ${kleur.cyan(w.file)}:${kleur.cyan().bold(w.line.toString())}:${kleur.cyan().bold(w.column.toString())}`
+        )
+      })
+      console.log("")
+
+      displayIndex++
+    }
+
+    console.log(`${kleur.yellow().bold("=".repeat(80))}`)
+    console.log(kleur.yellow().bold("AI Fix Request"))
+    console.log(kleur.yellow().bold("=".repeat(80)) + "\n")
+
+    // Generate structured prompt for AI
+    const promptSections: string[] = []
+
+    // Header with clear task description
+    promptSections.push(
+      kleur.yellow().bold("TASK: Fix all ESLint issues listed below.\n"),
+      kleur.yellow().bold("REQUIREMENTS:"),
+      kleur.yellow("  ✓ Fix ALL issues completely and correctly"),
+      kleur.yellow("  ✓ NO shortcuts, NO hacks, NO workarounds"),
+      kleur.yellow("  ✓ NO eslint-disable comments unless absolutely necessary"),
+      kleur.yellow("  ✓ Understand the root cause before fixing"),
+      kleur.yellow("  ✓ Verify fixes don't break existing functionality"),
+      kleur.yellow("  ✓ Consider edge cases and error handling"),
+      kleur.yellow("  ✓ Follow TypeScript and JavaScript best practices\n")
+    )
+
+    // Generate structured issue list
+    let aiIndex = 1
+    const totalIssues = warningsByRule.size
+    for (const [ruleId, warnings] of warningsByRule.entries()) {
+      const instruction = getRuleInstruction(ruleId)
+      const locationsList = warnings.map((w, idx) => `      ${idx + 1}. ${w.file}:${w.line}:${w.column}`).join("\n")
+
+      promptSections.push(
+        kleur.yellow().bold(`[${aiIndex}/${totalIssues}] ${ruleId}`),
+        kleur.yellow(`  Rule ID: ${ruleId}`),
+        kleur.yellow(`  Fix Instruction: ${instruction}`),
+        kleur.yellow(`  Total Occurrences: ${warnings.length}`),
+        kleur.yellow(`  File Locations:`),
+        kleur.yellow(locationsList),
+        ""
+      )
+      aiIndex++
+    }
+
+    // Footer with expectations
+    promptSections.push(
+      kleur.yellow().bold("EXPECTED OUTPUT:"),
+      kleur.yellow("  ✓ All issues fixed with proper, production-ready solutions"),
+      kleur.yellow("  ✓ Code follows TypeScript/JavaScript best practices"),
+      kleur.yellow("  ✓ No new ESLint issues introduced"),
+      kleur.yellow("  ✓ All changes are minimal, focused, and well-reasoned"),
+      kleur.yellow("  ✓ Code is maintainable and follows project conventions\n")
+    )
+
+    console.log(promptSections.join("\n"))
     console.log(`\n${kleur.red().bold("=".repeat(80))}\n`)
 
     process.exit(1)
@@ -666,15 +748,15 @@ async function processWarnings(): Promise<void> {
       cache.approvedWarnings.some((approved: WarningFingerprint) => fingerprintMatches(approved, w.fingerprint))
     ).length
     console.log(`\n✓ Cache updated (because we're organized like that):`)
-    console.log(`  - ${approvedCount} new warning(s) approved (you gave up on fixing them)`)
-    console.log(`  - ${fixedCount} warning(s) fixed and removed from cache (actual progress!)`)
+    console.log(`  - ${approvedCount} new issue(s) approved (you gave up on fixing them)`)
+    console.log(`  - ${fixedCount} issue(s) fixed and removed from cache (actual progress!)`)
     console.log(
-      `  - Total approved warnings in cache: ${cache.approvedWarnings.length} (the graveyard of warnings you've given up on)`
+      `  - Total approved issues in cache: ${cache.approvedWarnings.length} (the graveyard of issues you've given up on)`
     )
   } else {
-    console.log(`\n✓ All warnings are already approved (nothing new to deal with, how boring).`)
+    console.log(`\n✓ All issues are already approved (nothing new to deal with, how boring).`)
     if (fixedCount > 0) {
-      console.log(`  - ${fixedCount} warning(s) fixed and removed from cache (at least you fixed something)`)
+      console.log(`  - ${fixedCount} issue(s) fixed and removed from cache (at least you fixed something)`)
     }
   }
 }
